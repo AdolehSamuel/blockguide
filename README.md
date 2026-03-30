@@ -2,6 +2,8 @@
 
 BlockGuide is an interactive, chat-based platform that guides African youth through personalized blockchain learning paths. By answering a few simple questions, users are matched with a tailored learning roadmap to kickstart their blockchain journey.
 
+**Live Demo:** [https://blockguide-iota.vercel.app/](https://blockguide-iota.vercel.app/)
+
 ## Setup Instructions
 
 Follow these exact steps to get the project running locally.
@@ -10,19 +12,17 @@ Follow these exact steps to get the project running locally.
 
 - Node.js (v18 or newer recommended)
 - npm (Node Package Manager)
+- A PostgreSQL database (local or hosted, e.g. [Neon](https://neon.tech), [Supabase](https://supabase.com), or a local install)
+- A Google Gemini API key ([get one here](https://aistudio.google.com/app/apikey))
 
 ### 1. Clone the Repository
 
-Clone this public repository to your local machine:
-
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
+git clone https://github.com/AdolehSamuel/blockguide.git
 cd blockguide
 ```
 
 ### 2. Install Dependencies
-
-Install all the required packages:
 
 ```bash
 npm install
@@ -30,25 +30,25 @@ npm install
 
 ### 3. Setup the Database and Environment
 
-This project uses Prisma and SQLite for a simple, out-of-the-box local setup, along with the Google Gemini API.
+This project uses **PostgreSQL** with Prisma ORM and the Google Gemini API.
 
-Create a `.env` file in the root directory if it does not exist, and ensure it contains:
+Create a `.env` file in the root directory and add the following:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 NEXTAUTH_SECRET="your-development-secret-key-123"
-GEMINI_API_KEY="your-google-api-key-here"
+GEMINI_API_KEY="your-google-gemini-api-key-here"
 ```
 
-Then, initialize and migrate your database:
+Replace `USER`, `PASSWORD`, `HOST`, `PORT`, and `DATABASE` with your PostgreSQL credentials. If you are using a hosted provider like Neon or Supabase, they will give you this connection string directly.
+
+Then push the schema to your database:
 
 ```bash
 npx prisma db push
 ```
 
 ### 4. Run the Application
-
-Start the Next.js development server:
 
 ```bash
 npm run dev
@@ -58,14 +58,15 @@ npm run dev
 
 Navigate to `http://localhost:3000` in your web browser.
 
-- You can sign up as a new Learner.
-- To access the Admin Dashboard (`/admin`), you will need an account with the `ADMIN` role. For local testing, you can manually use Prisma Studio (`npx prisma studio`) to change a registered user's role from `"LEARNER"` to `"ADMIN"`.
+- Sign up as a new **Learner** to explore the chat and roadmaps.
+- To access the **Admin Dashboard** (`/admin`), you need an account with the `ADMIN` role. After signing up, run `npx prisma studio` and change your user's `role` field from `"LEARNER"` to `"ADMIN"`.
 
 ## Project Structure
 
 - **Frontend & Backend:** Next.js App Router
-- **Database:** SQLite with Prisma ORM
+- **Database:** PostgreSQL with Prisma ORM
 - **Authentication:** NextAuth.js
+- **AI:** Google Gemini API
 - **Styling:** TailwindCSS
 
 ## System Requirements Specification (SRS)

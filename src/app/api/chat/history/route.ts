@@ -30,9 +30,48 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Not found or forbidden" }, { status: 404 });
     }
 
-    return NextResponse.json({ messages: conversation.messages }, { status: 200 });
+    return NextResponse.json({ messages: conversation.messages, title: conversation.title }, { status: 200 });
   } catch (error: any) {
     console.error("Chat History API error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const conversationId = searchParams.get("id");
+
+    if (!conversationId) {
+      return NextResponse.json({ error: "Missing conversationId" }, { status: 400 });
+    }
+
+    const { title } = await req.json();
+    if (!title?.trim()) {
+      return NextResponse.json({ error: "Title cannot be empty" }, { status: 400 });
+    }
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conversation || conversation.userId !== session.user.id) {
+      return NextResponse.json({ error: "Not found or forbidden" }, { status: 404 });
+    }
+
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { title: title.trim() },
+    });
+
+    return NextResponse.json({ title: title.trim() }, { status: 200 });
+  } catch (error: any) {
+    console.error("Chat History PATCH error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

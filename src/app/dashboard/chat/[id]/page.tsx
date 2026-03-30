@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { SendHorizontal, Home } from "lucide-react";
+import { SendHorizontal, Home, Pencil, Check, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 
@@ -18,17 +18,21 @@ export default function ChatInterface() {
   const conversationId = params.id as string | undefined;
 
   const [messages, setMessages] = useState<MessageTuple[]>([]);
+  const [title, setTitle] = useState("New Chat");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (conversationId && conversationId !== "new") {
-      // Fetch existing messages
       fetch(`/api/chat/history?id=${conversationId}`)
         .then(r => r.json())
         .then(data => {
           if (data.messages) setMessages(data.messages);
+          if (data.title) setTitle(data.title);
         })
         .catch(console.error);
     }
@@ -37,6 +41,35 @@ export default function ChatInterface() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (editingTitle) titleInputRef.current?.focus();
+  }, [editingTitle]);
+
+  const startEditingTitle = () => {
+    setTitleDraft(title);
+    setEditingTitle(true);
+  };
+
+  const cancelEditingTitle = () => {
+    setEditingTitle(false);
+    setTitleDraft("");
+  };
+
+  const saveTitle = async () => {
+    const trimmed = titleDraft.trim();
+    if (!trimmed || trimmed === title || !conversationId || conversationId === "new") {
+      cancelEditingTitle();
+      return;
+    }
+    setEditingTitle(false);
+    setTitle(trimmed);
+    await fetch(`/api/chat/history?id=${conversationId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: trimmed }),
+    }).catch(console.error);
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,10 +116,42 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-screen min-h-screen bg-[var(--body_bg)] overflow-hidden">
-      {/* Header matching SheLearns Visual style but with user's brand */}
       <header className="bg-[var(--main_color)] text-white p-4 shadow-md border-b flex-shrink-0 z-10 relative flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-xl font-bold">BlockGuide</h1>
+          {editingTitle ? (
+            <div className="flex items-center gap-2">
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={titleDraft}
+                onChange={e => setTitleDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") saveTitle();
+                  if (e.key === "Escape") cancelEditingTitle();
+                }}
+                className="bg-white/20 text-white placeholder-white/60 border border-white/40 rounded px-2 py-0.5 text-xl font-bold text-center focus:outline-none focus:border-white w-56"
+              />
+              <button onClick={saveTitle} className="p-1 hover:bg-white/20 rounded-full" title="Save">
+                <Check size={18} />
+              </button>
+              <button onClick={cancelEditingTitle} className="p-1 hover:bg-white/20 rounded-full" title="Cancel">
+                <X size={18} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 justify-center">
+              <h1 className="text-xl font-bold">{title}</h1>
+              {conversationId !== "new" && (
+                <button
+                  onClick={startEditingTitle}
+                  className="p-1 hover:bg-white/20 rounded-full opacity-70 hover:opacity-100 transition-opacity"
+                  title="Rename chat"
+                >
+                  <Pencil size={15} />
+                </button>
+              )}
+            </div>
+          )}
           <p className="text-sm text-white/90">
             Empowering African Youth in Blockchain
           </p>
@@ -143,7 +208,7 @@ export default function ChatInterface() {
         </div>
       </main>
 
-      {/* Input Area matching visual (bar at bottom with brand send icon) */}
+      {/* Input Area */}
       <div className="bg-[var(--body_bg)] border-t border-[var(--lines_color)] p-4 flex-shrink-0 z-10">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSend} className="relative flex items-center">
